@@ -1,0 +1,14 @@
+apiVersion: v2
+name: policy-service
+description: A Helm chart for deploying the policy-service gRPC microservice
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - grpc
+  - onnx
+  - robotics
+  - path-planning
+maintainers:
+  - name: SyedDaiam9101
+    email: smdaiam616@gmail.com

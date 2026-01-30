@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package planner;
+
+option go_package = "github.com/SyedDaiam9101/policy-service/proto/plannerpb";
+
+// PathPlanner service for robot path planning using ONNX inference
+service PathPlanner {
+    // Plan computes the action for a single robot observation
+    rpc Plan(PlanRequest) returns (PlanResponse);
+    
+    // BatchPlan computes actions for multiple robot observations in a single call
+    rpc BatchPlan(BatchPlanRequest) returns (BatchPlanResponse);
+}
+
+// Observation represents sensor/state data for a robot
+message Observation {
+    repeated float data = 1;    // Flattened observation data
+    uint32 channels = 2;        // Number of channels (C)
+    uint32 height = 3;          // Height dimension (H)
+    uint32 width = 4;           // Width dimension (W)
+}
+
+// PlanRequest contains a single robot's planning request
+message PlanRequest {
+    uint64 robot_id = 1;        // Unique robot identifier
+    Observation obs = 2;        // Robot's current observation
+}
+
+// PlanResponse contains the computed action for a single robot
+message PlanResponse {
+    repeated float action = 1;  // Action vector output from policy
+    bool safe = 2;              // Safety flag (placeholder for confidence logic)
+}
+
+// BatchPlanRequest contains multiple planning requests
+message BatchPlanRequest {
+    repeated PlanRequest requests = 1;
+}
+
+// BatchPlanResponse contains multiple planning responses
+message BatchPlanResponse {
+    repeated PlanResponse responses = 1;
+}

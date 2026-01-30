@@ -1,0 +1,72 @@
+# Default values for policy-service
+replicaCount: 1
+
+image:
+  repository: ghcr.io/SyedDaiam9101/policy-service
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9100"
+  prometheus.io/path: "/metrics"
+
+podSecurityContext: {}
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 50051
+  metricsPort: 9100
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Health check configuration
+health:
+  path: /healthz
+  port: 9100
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# OpenTelemetry configuration
+otel:
+  enabled: false
+  endpoint: ""  # e.g., "http://otel-collector:4317"
+
+# Service configuration
+config:
+  port: 50051
+  metricsPort: 9100
+  modelPath: "/models/policy_cpu.onnx"
+  redisAddr: ""
+  useMock: false
+
+# Model volume (ConfigMap or PVC)
+modelVolume:
+  enabled: false
+  mountPath: /models
+  # For PVC:
+  # existingClaim: ""
+  # For ConfigMap (not recommended for large files):
+  # configMapName: ""

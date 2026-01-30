@@ -1,0 +1,121 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "policy-service.fullname" . }}
+  labels:
+    {{- include "policy-service.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "policy-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "policy-service.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "policy-service.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "-port"
+            - "{{ .Values.config.port }}"
+            - "-metrics"
+            - "{{ .Values.config.metricsPort }}"
+            - "-model"
+            - "{{ .Values.config.modelPath }}"
+            {{- if .Values.config.redisAddr }}
+            - "-redis"
+            - "{{ .Values.config.redisAddr }}"
+            {{- end }}
+            {{- if .Values.config.useMock }}
+            - "-mock"
+            {{- end }}
+          ports:
+            - name: grpc
+              containerPort: {{ .Values.config.port }}
+              protocol: TCP
+            - name: metrics
+              containerPort: {{ .Values.config.metricsPort }}
+              protocol: TCP
+          env:
+            - name: POLICY_SERVICE_PORT
+              value: "{{ .Values.config.port }}"
+            - name: POLICY_SERVICE_METRICS_PORT
+              value: "{{ .Values.config.metricsPort }}"
+            - name: POLICY_SERVICE_MODEL
+              value: "{{ .Values.config.modelPath }}"
+            {{- if .Values.config.redisAddr }}
+            - name: POLICY_SERVICE_REDIS
+              value: "{{ .Values.config.redisAddr }}"
+            {{- end }}
+            {{- if .Values.otel.enabled }}
+            - name: POLICY_SERVICE_OTEL_ENABLED
+              value: "true"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "{{ .Values.otel.endpoint }}"
+            {{- end }}
+            - name: REQUEST_ID_HEADER
+              value: "x-request-id"
+          # Liveness probe - checks if the service is alive
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.health.path }}
+              port: {{ .Values.health.port }}
+            initialDelaySeconds: {{ .Values.health.initialDelaySeconds }}
+            periodSeconds: {{ .Values.health.periodSeconds }}
+            timeoutSeconds: {{ .Values.health.timeoutSeconds }}
+            failureThreshold: {{ .Values.health.failureThreshold }}
+          # Readiness probe - checks if the service is ready to accept traffic
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: {{ .Values.health.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.modelVolume.enabled }}
+          volumeMounts:
+            - name: model-volume
+              mountPath: {{ .Values.modelVolume.mountPath }}
+              readOnly: true
+          {{- end }}
+      {{- if .Values.modelVolume.enabled }}
+      volumes:
+        - name: model-volume
+          {{- if .Values.modelVolume.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.modelVolume.existingClaim }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

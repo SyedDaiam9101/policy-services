@@ -1,0 +1,20 @@
+# config.yaml
+# Example configuration file for policy-service
+# Environment variables and flags take precedence over this file
+
+# Server configuration
+port: 50051
+metrics_port: 9100
+
+# Model configuration
+model: "policy_cpu.onnx"
+
+# Redis configuration (optional)
+redis: "localhost:6379"
+
+# OpenTelemetry configuration
+otel_enabled: false
+otel_endpoint: ""  # e.g., "http://otel-collector:4317"
+
+# Feature flags
+use_mock_inference: false
